@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Veglia">
+  <title>Veglia</title>
+  <!-- A watch kept through the night, drawn as the record it keeps: a ring of
+       minutes in every state the dashboard can report, in the dashboard's own
+       colours. The violet stretch nobody was watching closes the ring, and is
+       coloured rather than left empty, which is the whole argument.
+
+       The order is not the legend's. Amber sits between the two reds on
+       purpose: internet-down and local-network-down are adjacent in hue, and
+       side by side they merged into one band at favicon size. -->
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <g fill="none" stroke-width="54" stroke-linecap="butt"
+     transform="rotate(-90 256 256)">
+    <circle cx="256" cy="256" r="150" stroke="#10b981" stroke-dasharray="471.2 471.2" stroke-dashoffset="0"/>
+    <circle cx="256" cy="256" r="150" stroke="#ef4444" stroke-dasharray="94.2 848.2"  stroke-dashoffset="-471.2"/>
+    <circle cx="256" cy="256" r="150" stroke="#fbbf24" stroke-dasharray="113.1 829.4" stroke-dashoffset="-565.5"/>
+    <circle cx="256" cy="256" r="150" stroke="#be123c" stroke-dasharray="75.4 867.1"  stroke-dashoffset="-678.6"/>
+    <circle cx="256" cy="256" r="150" stroke="#f97316" stroke-dasharray="94.2 848.2"  stroke-dashoffset="-754.0"/>
+    <circle cx="256" cy="256" r="150" stroke="#7c3aed" stroke-dasharray="94.2 848.2"  stroke-dashoffset="-848.2"/>
+  </g>
+</svg>

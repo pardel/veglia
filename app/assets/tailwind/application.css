@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* "Not observed" is a failure, and it is not a connection failure.
+   Amber through rose is reserved for the link breaking; violet says the
+   fault was Veglia's own, and the hatch says there is no measurement
+   underneath the colour rather than a bad one. A flat fill would read
+   as a sixth outage kind, and the pale grey it replaces read as
+   harmless empty space, which is the reading this application exists
+   to refuse. */
+.bar-unobserved {
+  background-color: #7c3aed;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgb(255 255 255 / 0.45) 0 2px,
+    transparent 2px 5px
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  .bar-unobserved {
+    background-color: #8b5cf6;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgb(15 23 42 / 0.45) 0 2px,
+      transparent 2px 5px
+    );
+  }
+}

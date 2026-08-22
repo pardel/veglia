@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  A LaunchDaemon rather than a LaunchAgent, on purpose: an agent starts
+  at login, and a headless Mac that reboots at 4am may sit for days
+  with nobody logged in. The daemon starts at boot and drops to the
+  named user, so nothing here runs as root beyond launchd itself.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>dev.pardel.veglia</string>
+
+  <key>UserName</key>
+  <string>__USER__</string>
+
+  <key>WorkingDirectory</key>
+  <string>__APP_DIR__</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__APP_DIR__/bin/veglia-server</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- The real Ruby bin directory, not an rbenv shim: shims need
+         rbenv on PATH, and launchd provides no shell to set one up. -->
+    <key>PATH</key>
+    <string>__RUBY_BIN__:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key>
+    <string>__HOME__</string>
+    <key>RAILS_ENV</key>
+    <string>production</string>
+    <key>PORT</key>
+    <string>__PORT__</string>
+    <key>VEGLIA_STORAGE</key>
+    <string>__DATA_DIR__</string>
+    <key>VEGLIA_NODE</key>
+    <string>__NODE__</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Restart on crash. A monitor that dies quietly is worse than no
+       monitor, and the gap it leaves is recorded either way. -->
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>__DATA_DIR__/log/veglia.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__DATA_DIR__/log/veglia.err.log</string>
+</dict>
+</plist>

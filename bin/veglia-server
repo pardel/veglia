@@ -1,0 +1,33 @@
+#!/bin/bash
+# Entry point for the launchd job.
+#
+# launchd starts processes with almost no environment, so everything the
+# app needs is established here rather than assumed from a login shell
+# that will never run.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+export RAILS_ENV="${RAILS_ENV:-production}"
+export VEGLIA_STORAGE="${VEGLIA_STORAGE:?VEGLIA_STORAGE must be set}"
+export PORT="${PORT:-1440}"
+
+# Run the Solid Queue supervisor inside Puma, so the whole application
+# is one process and one launchd job rather than a web process and a
+# worker that can drift out of step with each other.
+export SOLID_QUEUE_IN_PUMA=1
+
+# Read the secret from a file the owner alone can read, rather than
+# embedding it in the plist: /Library/LaunchDaemons is world-readable.
+secret_file="$VEGLIA_STORAGE/secret_key_base"
+if [ ! -f "$secret_file" ]; then
+  echo "veglia: missing $secret_file — run deploy/install.sh first" >&2
+  exit 1
+fi
+SECRET_KEY_BASE="$(cat "$secret_file")"
+export SECRET_KEY_BASE
+
+# Apply any migration that shipped with this version before serving.
+bundle exec rails db:prepare
+
+exec bundle exec puma -C config/puma.rb

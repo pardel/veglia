@@ -1,0 +1,41 @@
+<% content_for :title, "Veglia" %>
+
+<div class="w-full max-w-5xl mx-auto pb-16">
+  <header class="flex flex-wrap items-baseline justify-between gap-2 mb-8">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Veglia</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Keeping watch on the connection</p>
+    </div>
+    <p class="text-xs text-slate-400 tabular-nums" data-refresh-at="<%= @generated_at.to_i %>">
+      as of <%= local_time(@generated_at) %>
+    </p>
+  </header>
+
+  <div class="space-y-8">
+    <%= render partial: "node", collection: @summaries, as: :summary %>
+  </div>
+
+  <footer class="mt-10 text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
+    <p>
+      Uptime is measured against the minutes Veglia actually observed. Coverage is
+      how many of the window's minutes those were: a monitor cannot record its own
+      downtime, so the two numbers are reported side by side and never combined.
+    </p>
+    <p class="mt-2">
+      Minutes marked <span class="font-medium text-violet-600 dark:text-violet-400">not observed</span>
+      are counted as a failure in their own right, and a separate one from the connection
+      dropping. Veglia was supposed to be watching and was not, which is worth fixing
+      whatever the link was doing at the time, and is not something the colour of a
+      good minute should be allowed to cover.
+    </p>
+  </footer>
+</div>
+
+<script>
+  // Reload on a slow cadence, and only while the tab is actually being
+  // looked at, so a dashboard left open on a spare screen does not
+  // spend the night waking the machine it is meant to be watching.
+  setInterval(() => {
+    if (document.visibilityState === "visible") window.location.reload();
+  }, 30000);
+</script>

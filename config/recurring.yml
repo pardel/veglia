@@ -1,0 +1,20 @@
+# The heartbeat. Everything Veglia knows comes from this one entry
+# firing on time, so the cadence lives in version control rather than
+# in a crontab on one machine that nobody remembers editing.
+#
+# Schedules are parsed by Fugit, which accepts both this prose form and
+# ordinary cron syntax.
+
+
+production:
+  connectivity_check:
+    class: CheckJob
+    schedule: every minute
+  nightly_rollup:
+    class: MaintenanceJob
+    # After midnight so the day it summarises is complete, and off the
+    # hour so it never contends with anything else that likes 3am.
+    schedule: every day at 3:10am
+  clear_solid_queue_finished_jobs:
+    command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
+    schedule: every hour at minute 12

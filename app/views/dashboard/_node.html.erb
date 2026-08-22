@@ -1,0 +1,160 @@
+<%# A stale node has no current status to show, and status_style falls
+    back to the stale styling for anything it does not recognise. %>
+<% style = status_style(summary.stale? ? nil : summary.status) %>
+
+<section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+
+  <%# ---- Current state ------------------------------------------------ %>
+  <div class="p-6 flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold <%= style[:chip] %>">
+          <%= summary.stale? ? "No recent data" : status_label(summary.status) %>
+        </span>
+        <h2 class="text-xl font-medium text-slate-900 dark:text-slate-100"><%= summary.node %></h2>
+      </div>
+
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <% if !summary.known? %>
+          Waiting for the first check.
+        <% elsif summary.stale? %>
+          Last check <%= humanize_duration(Time.current - summary.latest.checked_at) %> ago
+          (<%= local_time(summary.latest.checked_at) %>). Veglia is not currently running here,
+          or cannot write to its database.
+        <% else %>
+          <%= status_label(summary.status) %> for
+          <strong class="text-slate-700 dark:text-slate-200"><%= humanize_duration(Time.current - summary.status_since) if summary.status_since %></strong>,
+          last checked <%= local_time(summary.latest.checked_at) %>.
+        <% end %>
+      </p>
+
+      <% if summary.current_outage %>
+        <p class="mt-1 text-sm font-medium text-red-600 dark:text-red-400">
+          Ongoing: <%= summary.current_outage.label %>, since
+          <%= local_time(summary.current_outage.started_at) %>
+          (<%= humanize_duration(Time.current - summary.current_outage.started_at) %>).
+        </p>
+      <% end %>
+    </div>
+
+    <div class="text-right text-sm text-slate-500 dark:text-slate-400">
+      <% if summary.machine_up_since %>
+        <p class="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-wide">Machine up</p>
+        <p class="text-lg font-medium text-slate-800 dark:text-slate-100 tabular-nums">
+          <%= humanize_duration(Time.current - summary.machine_up_since) %>
+        </p>
+        <p class="text-xs">since <%= local_time(summary.machine_up_since) %></p>
+      <% end %>
+    </div>
+  </div>
+
+  <%# ---- Uptime, always beside its coverage ---------------------------- %>
+  <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
+    <% summary.stats.each do |label, stats| %>
+      <div class="p-5">
+        <p class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500"><%= label %></p>
+        <p class="mt-1 text-3xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+          <%= percent(stats.uptime_percent) %>
+        </p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          uptime across <span class="font-medium"><%= percent(stats.coverage_percent) %></span> coverage
+        </p>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-2 tabular-nums">
+          <%= number_with_delimiter(stats.observed_minutes) %> min observed
+        </p>
+        <% if stats.down_minutes.positive? || stats.degraded_minutes.positive? %>
+          <p class="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+            <%= stats.down_minutes %> down · <%= stats.degraded_minutes %> degraded
+          </p>
+        <% end %>
+        <%# Not folded into the line above: those minutes are a failure of
+            the connection, these are a failure of the monitor. And the
+            two below are not each other either — a hole in the record is
+            a fault, the stretch before the record began is not. %>
+        <% if stats.missing_minutes.positive? %>
+          <p class="text-xs font-medium text-violet-600 dark:text-violet-400 tabular-nums">
+            <%= number_with_delimiter(stats.missing_minutes) %> min not observed
+          </p>
+        <% end %>
+        <% if stats.unstarted_minutes.positive? %>
+          <p class="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+            <%= number_with_delimiter(stats.unstarted_minutes) %> min before this node started
+          </p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# ---- Last 24 hours, five minutes to a cell -------------------------- %>
+  <div class="px-6 pt-5 pb-6 border-t border-slate-100 dark:border-slate-800">
+    <div class="flex items-baseline justify-between mb-2">
+      <p class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Last 24 hours</p>
+      <%# Two families, separated rather than run together: everything left
+          of the rule is the connection failing, and the one on the right is
+          Veglia failing. %>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500">
+        <% connection_statuses.each do |key| %>
+          <span class="inline-flex items-center gap-1">
+            <span class="w-2 h-2 rounded-sm <%= status_bar_class(key) %>"></span><%= status_label(key) %>
+          </span>
+        <% end %>
+        <span aria-hidden="true" class="text-slate-300 dark:text-slate-600">|</span>
+        <span class="inline-flex items-center gap-1 font-medium text-violet-600 dark:text-violet-400">
+          <span class="w-2 h-2 rounded-sm <%= status_bar_class(Heatmap::MISSING) %>"></span><%= status_label(Heatmap::MISSING) %>
+        </span>
+      </div>
+    </div>
+
+    <div class="flex gap-px h-9 items-stretch">
+      <% summary.heatmap.buckets.each do |bucket| %>
+        <div class="flex-1 rounded-[1px] <%= status_bar_class(bucket.status) %>"
+             title="<%= local_time(bucket.starts_at) %> — <%= status_label(bucket.status) %><%= " (#{bucket.count} checks)" if bucket.count.positive? %>"></div>
+      <% end %>
+    </div>
+
+    <div class="flex justify-between mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+      <span>24h ago</span>
+      <span>now</span>
+    </div>
+
+    <p class="mt-3 text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+      Latency (24 h): median <%= milliseconds(summary.stats["24 hours"].p50_ms) %> ·
+      p95 <%= milliseconds(summary.stats["24 hours"].p95_ms) %>
+    </p>
+  </div>
+
+  <%# ---- Outages, observed and inferred alike --------------------------- %>
+  <div class="px-6 pb-6">
+    <p class="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">Recent interruptions</p>
+
+    <% if summary.outages.empty? %>
+      <p class="text-sm text-slate-500 dark:text-slate-400">None recorded.</p>
+    <% else %>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <th class="py-1 font-medium">What</th>
+            <th class="py-1 font-medium">Started</th>
+            <th class="py-1 font-medium text-right">Lasted</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <% summary.outages.each do |outage| %>
+            <tr>
+              <td class="py-1.5 text-slate-700 dark:text-slate-200">
+                <%= outage.label %>
+                <% if Outage::INFERRED.include?(outage.kind) %>
+                  <span class="ml-1 text-[11px] font-medium text-violet-600 dark:text-violet-400">(not observed — inferred from a gap)</span>
+                <% end %>
+              </td>
+              <td class="py-1.5 text-slate-500 dark:text-slate-400 tabular-nums"><%= local_time(outage.started_at) %></td>
+              <td class="py-1.5 text-right tabular-nums text-slate-700 dark:text-slate-200">
+                <%= outage.ongoing? ? "ongoing" : humanize_duration(outage.duration_s) %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+</section>
